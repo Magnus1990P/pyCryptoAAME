@@ -8,9 +8,6 @@
 #	Descr:		Implementation of the arrow algorithm 
 #						with the use of modular exponentiation
 ########################################################
-#######################################################
-##
-#######################################################
 
 #######################################################
 ##	Imports
@@ -23,11 +20,14 @@ import sys
 binary	= []		#Binary holder for b, the reverse binary sequence of b
 modExp	= []		#Modulated calculations, holds the output val of mod exp calcs
 congr		= []		#Congruence value holder, n-1 length array
+base		= []		#Base value holder, n-1 length array
 
-a 	= 0						#Integer base value
-b		= 0						#Integer exponential value
-n 	= 0						#Integer modulus value
-ML	= 5						#Max integer length for printing
+a 			= 0			#Integer base value
+b				= 0			#Integer exponential value
+n 			= 0			#Integer modulus value
+ML			= 5			#Max integer length for printing scientific numbers
+K				= 2			#Value to calculate congruence
+
 #######################################################
 ##	Input parameter check
 #######################################################
@@ -35,8 +35,7 @@ if len( sys.argv ) != 4:
 	print "Execute program with the following command:\n\t" 		\
 				"./main.py [base (a)] [exponent (b)] [mod (n)]\n" 		\
 				"Eg. './main 2 1234 789', should output 481 as "			\
-				"shown on p78-79 in Trappe and Washinton 2nd Ed\n"		\
-				"NB! This program works only on positive integers.\n" 
+				"shown on p78-79 in Trappe and Washinton 2nd Ed\n"		
 	exit()
 
 try:													#Try to convert input arg to integer values
@@ -49,23 +48,6 @@ except:												#If conversion to integer failse print error
 	exit()
 
 
-#######################################################
-##	Returns a list of "num"s bin val in rev order
-#######################################################
-def getBinary( num, bi ):					
-	if num == 0 or num == 1:				#If last run value is 0 / 1
-		bi.append( num )							#Append the value to binary representation
-		print "%35s  ->%7s  |   mod(%d)  = %5d" % ( str(num), str(num), a, num ) 	
-		return bi											#Return the finished binary sequence
-
-	x = num % a											#Grab the remainder, just using modulo operand
-	bi.append( x )									#Append binary value to list
-																	#Print the calculation
-	print "%13d / %2d %8s %7s  -> %6s  |   mod(%d)  = %5d" % ( num, a, "=", 
-			str(num/a), str(num), a, x ) 	
-
-	bi = getBinary( (num/a), bi )		#Recursive call to create the bin sequence
-	return bi
 
 #######################################################
 ##	Helper function to print headings
@@ -74,74 +56,113 @@ def title( d, n, out ):
 	print "\n%s\n%s\t%s\n%s" % (d*n, d, out, d*n)	#Print divisor, string, divisor
 
 #######################################################
+##	Helper function to print large numbers
+#######################################################
+def sciNum( c ):
+	s = str(congr[I-1])							#Convert number to string
+	t = len(s)-1										#number of e
+	l = list(s[:ML])								#Convert 5 first numbers to list
+	l.insert(1, ".")								#Add a comma after first number
+
+	o = ""
+	if t > 0:												#If org number is more than 10
+		o = "".join(l) + "e+%d"  % t	#Create scientific number
+	else:																				
+		o = "".join(l) + "0e+%d" % t	#Add after comma when appending
+
+	return o
+
+#######################################################
+##	Returns a list of "num"s bin val in rev order
+#######################################################
+def getBinary( num, bi ):					
+	if num == 0 or num == 1:				#If last run value is 0 / 1
+		bi.append( num )							#Append the value to binary representation
+		print "%35s  ->%7s  |   mod(%d)  = %5d" % ( str(num), str(num), K, num ) 	
+		return bi											#Return the finished binary sequence
+
+	x = num % K											#Grab the remainder, just using modulo operand
+	bi.append( x )									#Append binary value to list
+																	#Print the calculation
+	print "%13d / %2d %8s %7s  -> %6s  |   mod(%d)  = %5d" % ( num, K, "=", 
+			str(num/a), str(num), K, x ) 	
+
+	bi = getBinary( (num/K), bi )		#Recursive call to create the bin sequence
+	return bi
+
+
+#######################################################
+##	Calculates all base numbers for use in modExp 
+#######################################################
+def calcBase( I ):
+	global base
+	if I >= len(binary):													#Cutoff function to finish calc
+		return																			#return to escape function
+	elif I == 0:																	#First calculation
+		base.append( (a**K) % n)										#append a^2 mod(n) as first val
+		print "%10d^%4d | mod(%d) == %12d^%d | mod(%d) == %d" % (K, (K**I), n, a, K,
+				n, base[I] ) 
+	else:																					#If not finished
+		base.append( (base[I-1] ** K) % n )					#Add congruence value
+		print "%10d^%4d | mod(%d) == %12d^%d | mod(%d) == %d" % (K, (K**I), n,
+				base[I-1], K,
+				n, base[I] ) 
+	calcBase( I+1 )
+
+
+#######################################################
 ##	Recursive function to calculate the mod exp
 #######################################################
-def calcModExp( B, I ):
-	global modExp, congr, a, b, n									#Global values to use
-	if I >= len(B):																#Cutoff function to finish calc
+def calcModExp( I ):
+	global modExp 																#Global values to use
+	if I >= len(binary):													#Cutoff function to finish calc
 		return																			#return to escape function
+	elif I == 0:																	#If first calculation
+		if binary[I] == 1:													#If calculation should be made
+			modExp.append( (1 * a ) % n)							#Static calculation
+			print "%d -> %6d^%4d | mod(%d) = %7d * " \
+						"%4d | mod(%d) == %d" % (binary[I], 
+								a, b, n, 1, a, n,	modExp[0])		#print first calc line
+		if binary[I] == 0:													#If calculation should be made
+			modExp.append( 1 )							#Static calculation
+			print "%d -> %22s = %25s == %d" % (binary[I], " ", " "	,	modExp[I])
+
 	else:																					#If not finished
-		if I < len(B)-1:														#Avoid creating last congruence
-			congr.append( congr[I-1] ** a )						#Add congruence value
-		x = congr[I-1]**a														#Calc simpler exponential val
-		y = x % n																		#The modulus
-		modExp.append( y )													#Append the modExp value to list
+		d = modExp[I-1]															#Prev modExp
+		e = base[I-1]																#Prev base value
+		
+		if binary[I] == 1:													#If calculation should be made
+			f = (d * e)																#new modExp value
+			g = f % n																	#new modExp value	
+			modExp.append( g )												#Add modExp value to list
 
-		w1	= "(" + str(a) + "^" + str(a**I) + ")"	#Generate output string part 1
+			print "%d -> %22s = %7d * %4d | mod(%d) == %d" %(binary[I], " ", d,e,n,g)
+		else:																				#Print intermediate line
+			print "%d -> %22s = %25s == %d" % (binary[I], " ", " "	,	modExp[I-1])
+			modExp.append( modExp[I-1] )							#Add previous modExp value
 
-		s = str(congr[I-1])													#Create scientific number
-		l = list(s[:ML])
-		l.insert(1, ".")
-		if len(s)-1 > 0:
-			o = "".join(l) + "e+%d" % int(len(s)-1)
-		else:
-			o = "".join(l) + "0e+%d" % int(len(s)-1)
-
-																								#Generate output string part 2
-		w2	= "(%13s ^ %d )" % (o, a)
-																								#Create the output string
-		out = "%12s | mod(%d) == %17s | mod(%d) == %5s" % (w1, n, w2, n, y)
-		print out																		#Print calculation
-		calcModExp( B, I+1 )												#Recursive call to nex calc
-
+	calcModExp( I+1 )															#Recursive call to nex calc
 
 
 
 #######################################################
 ##	Main running function
 #######################################################
-title( "#", 80, "Converting %d from base 10 to base %d" % (b,a))
+title( "#", 80, "Converting %d from base 10 to base %d" % (b,K))
 binary = getBinary( b, [] )						#calculate the reverse binary sequence
-
 																			#Print bin seq in correct order high->low
-print "\tInt %d converted to %d base: " % ( b, a),
-for x in binary[::-1]:
+print "\tInt %d converted to %d base: " % ( b, K),
+for x in binary[::-1]:								
 	print x,
+print 
 
-modExp.append( binary[0] )						#Add initial modExponential value
-congr.append( a )											#append base value as first congruence val
+title("#",80, "Calculating base numConverting %d from base 10 to base %d"%(b,K))
+calcBase( 0 )
 
 title( "#", 80, "Calculating the modular exponentiations")
-calcModExp( binary, 1 )								#Start to calculate the mod exponentials
+calcModExp( 0 )								#Start to calculate the mod exponentials
 
-title( "#", 80, "Calculating the final modular exponential value.")
-s = "%d^%d | mod(%d)" % (a,b, n)
 
-calc = ""
-ans = 1
-L = len(binary)-1
-if b >= 1:
-	for i in range( 0, len(binary) ):
-		if binary[L-i] == 1:
-			if ans > 1:
-				calc = calc + " * "
-			calc = calc + "%d" % modExp[L-i]
-			ans = ( ans * modExp[L-i] )
-		modExp[i]
-
-print "%22s = %s | mod( %d )" % (s, calc, n)
-print "%22s = %d | mod( %d )" % (" ", ans, n)
-print "%22s = %5d" %(" ", (ans%n) )
-print " "*25 + "="*6
+title( "#",80, "%d^%d | mod(%d) = %d" % (a, b, n, modExp[len(modExp)-1] ) )
 
 
