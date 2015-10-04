@@ -19,14 +19,13 @@ import sys
 #######################################################
 binary	= []		#Binary holder for b, the reverse binary sequence of b
 modExp	= []		#Modulated calculations, holds the output val of mod exp calcs
-congr		= []		#Congruence value holder, n-1 length array
 base		= []		#Base value holder, n-1 length array
 
 a 			= 0			#Integer base value
 b				= 0			#Integer exponential value
 n 			= 0			#Integer modulus value
 ML			= 5			#Max integer length for printing scientific numbers
-K				= 2			#Value to calculate congruence
+K				= 2			#Fixed value to use as exponential value and divisor
 
 #######################################################
 ##	Input parameter check
@@ -59,7 +58,10 @@ def title( d, n, out ):
 ##	Helper function to print large numbers
 #######################################################
 def sciNum( c ):
-	s = str(congr[I-1])							#Convert number to string
+	if c < 10000:
+		return str( c )
+
+	s = str( c )										#Convert number to string
 	t = len(s)-1										#number of e
 	l = list(s[:ML])								#Convert 5 first numbers to list
 	l.insert(1, ".")								#Add a comma after first number
@@ -100,13 +102,12 @@ def calcBase( I ):
 		return																			#return to escape function
 	elif I == 0:																	#First calculation
 		base.append( (a**K) % n)										#append a^2 mod(n) as first val
-		print "%10d^%4d | mod(%d) == %12d^%d | mod(%d) == %d" % (K, (K**I), n, a, K,
-				n, base[I] ) 
+		print "%10d^%4d | mod(%d) == %12d^%d | mod(%d) == %10s | mod(%d) == %d" % \
+		(K, (K**I), n, a, K, n, sciNum(base[I]), n, base[I] ) 
 	else:																					#If not finished
 		base.append( (base[I-1] ** K) % n )					#Add congruence value
-		print "%10d^%4d | mod(%d) == %12d^%d | mod(%d) == %d" % (K, (K**I), n,
-				base[I-1], K,
-				n, base[I] ) 
+		print "%10d^%4d | mod(%d) == %12d^%d | mod(%d) == %10s | mod(%d) == %d" % \
+		(K, (K**I), n, base[I-1], K, n, sciNum(base[I-1]**K), n, base[I] ) 
 	calcBase( I+1 )
 
 
